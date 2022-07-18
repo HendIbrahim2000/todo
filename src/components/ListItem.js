@@ -34,6 +34,7 @@ const Item = styled.li`
     div {
         display: flex;
         align-items: center;
+        text-decoration: ${props => (props.complete ? 'line-through' : 'none')};
 
         span {
             display: inline-block;
@@ -42,7 +43,8 @@ const Item = styled.li`
             border-radius: 50%;
             border: 1px solid #ddd;
             backgroung: ${props => (props.mood ? '#dbdbdb' : '#4d4e5a')};
-            margin-right: 20px
+            margin-right: 20px;
+            background-image: ${props => (props.complete ? 'linear-gradient(#8f1e9d,#382099)' : 'none')};
         }
     }
     
@@ -53,7 +55,7 @@ const ListItem = props => {
         <Item mood={props.mood} 
         complete={props.complete}>
             <div>
-                <span mood={props.mood} onClick={props.completeHandler}></span>
+                <span mood={props.mood.toString()} onClick={props.completeItem}></span>
                 {props.text} 
             </div>
             <img src={close} alt='' onClick={props.deleteItem} />

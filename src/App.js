@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import axios from 'axios'
 
 import moon from './assets/icon-moon.svg'
+import sun from './assets/icon-sun.svg'
 import darkBg from './assets/bg-desktop-dark.jpg'
 import lightBg from './assets/bg-desktop-light.jpg'
 
@@ -20,6 +21,9 @@ const Container = styled.div`
   margin: auto;
   padding-top: 100px;
   padding-bottom: 100px;
+  @media (max-width: 600px) {
+    width: 90%
+  }
 `
 
 const Header = styled.div`
@@ -56,6 +60,9 @@ li {
 
   span {
     cursor: pointer;
+    @media (max-width: 600px) {
+      font-size: 12px;
+    }
   }
 }
 `
@@ -67,7 +74,7 @@ const Input = styled.input`
   border: none;
   border-radius: 6px;
   box-shadow: 0 0 6px rgb(0 0 0 / 50%);
-  color: ${props => (props.mood ? '#25273c' : '#c3c3c3')};;
+  color: ${props => (props.mood ? '#25273c' : '#c3c3c3')};
   font-size: 20px;
   padding: 0 20px;
   line-height: 3;
@@ -78,18 +85,24 @@ const Input = styled.input`
 }
 `
 
+
+
 const App = () => {
 
   const [mood, setMood] = useState(false)
   const [listText, addListText] = useState([])
+  const [active, addActive] = useState([])
+  const [complete, addComplete] = useState([])
+  const [listArr, addlistArr] = useState(null)
   // const [item, addItem] = useState(null)
-  
+  // let listArr = null
 
   const onKeyUp =(event) => {
     if (event.charCode === 13) {
-      axios.post('https://todo-13e9f-default-rtdb.firebaseio.com/list.json', {item : event.target.value, active: true})
+      axios.post('https://todo-13e9f-default-rtdb.firebaseio.com/list.json', 
+      {item : event.target.value, complete: false})
       .then(res => {
-        addListText(listText.concat({text: event.target.value, id: res.data.name}))
+        addListText(listText.concat({text: event.target.value, id: res.data.name, complete: false}))
         
       }).then(()=>{
         event.target.value = ''
@@ -109,58 +122,200 @@ const deleteHandler = id => {
   .then(res => {
     addListText(listText.filter((item) => item.id !== id))
   })
-} 
+}
+
+const deleteCompleted = () => {
+  let remain=[]
+  for(const key in listArr) {
+    if(listArr[key].props.complete=== true) {
+      console.log(listArr[key].key)
+      axios.delete(`https://todo-13e9f-default-rtdb.firebaseio.com/list/${listArr[key].key}.json`)
+      
+    }
+    if(listArr[key].props.complete=== false) {
+      remain.push({text: listArr[key].props.text, id: listArr[key].key, complete: listArr[key].props.complete})
+    }
+  }
+  addListText(remain)
+  
+}
+
+const activItemHandler = item => {
+  
+  // let active = [],
+  // complete = []
+  // for(const key in listText) {
+    switch(item) {
+      case 1:
+      const activeArr = active.map(item => {
+        return <ListItem 
+        mood={mood} 
+        text={item.text} 
+        key={item.id} 
+        complete={item.complete}
+        deleteItem={deleteHandler.bind(this, item.id)} 
+        completeItem={completeHandler.bind(this, item.id)}
+        />
+      })
+      addlistArr(activeArr)
+      break;
+      case 2:
+      const completeArr = complete.map(item => {
+        return <ListItem 
+        mood={mood} 
+        text={item.text} 
+        key={item.id} 
+        complete={item.complete}
+        deleteItem={deleteHandler.bind(this, item.id)} 
+        completeItem={completeHandler.bind(this, item.id)}
+        />
+      })
+      addlistArr(completeArr)
+      break;
+      case 3:
+        const Arr = listText.map(item => {
+          return <ListItem 
+          mood={mood} 
+          text={item.text} 
+          key={item.id} 
+          complete={item.complete}
+          deleteItem={deleteHandler.bind(this, item.id)} 
+          completeItem={completeHandler.bind(this, item.id)}
+          />
+        })
+        addlistArr(Arr)
+        break;
+        default:
+      
+        addlistArr(Arr)
+  // }
+  // if(item) {
+  //   addListText(active)
+  // } else {
+  //   addListText(complete)
+  // }
+
+}
+}
+// const initialData = () => {
+//   if(listText) {
+//     const Arr = listText.map(item => {
+//       return <ListItem 
+//       mood={mood} 
+//       text={item.text} 
+//       key={item.id} 
+//       complete={item.complete}
+//       deleteItem={deleteHandler.bind(this, item.id)} 
+//       completeItem={completeHandler.bind(this, item.id)}
+//       />
+//     })
+//     addlistArr(Arr)
+//   }
+// }
+
+const getData = () => {
+  axios.get('https://todo-13e9f-default-rtdb.firebaseio.com/list.json')
+  .then(res => {
+    const result = res.data
+    const init = [],
+    activeItems= [],
+    completeItems= []
+    for(const key in result) {
+      init.push({text:result[key].item, id: key, complete: result[key].complete})
+      if(result[key].complete=== false) {
+        activeItems.push({text:result[key].item, id: key, complete: result[key].complete})
+      }
+      if(result[key].complete === true) {
+        completeItems.push({text:result[key].item, id: key, complete: result[key].complete})
+      }
+      addListText(init)
+      addActive(activeItems)
+      addComplete(completeItems)
+      
+    }
+  }).then(()=>{
+    
+    
+    
+  })
+  .catch(err => {
+    console.log(err)
+  })
+}
+
+const completeHandler = id => {
+
+  axios.patch(`https://todo-13e9f-default-rtdb.firebaseio.com/list/${id}.json`, {complete: true})
+  .then(res=> {
+    getData()
+  })
+  .catch(err=> {
+    console.log(err)
+  })
+
+  
+}
 
 
 
 useEffect(()=> {
-    axios.get('https://todo-13e9f-default-rtdb.firebaseio.com/list.json')
-    .then(res => {
-      const result = res.data
-      const init = []
-      for(const key in result) {
-        init.push({text:result[key].item, id: key, active: result[key].active})
-        addListText(init)
-      }
-    })
-    .catch(err => {
-      console.log(err)
-    })
+  getData()
   
 },[])
 
-
-
+useEffect(()=> {
+  const activeItems= [],
+  completeItems= []
+  for(const key in listText) {
+    
+    if(listText[key].complete=== false) {
+      activeItems.push({text:listText[key].text, id: key, complete: listText[key].complete})
+    }
+    if(listText[key].complete === true) {
+      completeItems.push({text:listText[key].text, id: key, complete: listText[key].complete})
+    }
+  }
+    addActive(activeItems)
+    addComplete(completeItems)
+    activItemHandler(3)
+},[listText, mood])
 // useEffect(()=> {
 //   if(item) {
     
 //   }
   
 // },[listText])
-let listArr = null
 
-if(listText) {
-  listArr = listText.map(item => {
-    return <ListItem mood={mood} text={item.text} key={item.id} deleteItem={deleteHandler.bind(this, item.id)} />
-  })
-}
+
+// if(listText) {
+//   listArr = listText.map(item => {
+//     return <ListItem 
+//     mood={mood} 
+//     text={item.text} 
+//     key={item.id} 
+//     complete={item.complete}
+//     deleteItem={deleteHandler.bind(this, item.id)} 
+//     completeItem={completeHandler.bind(this, item.id)}
+//     />
+//   })
+// }
   return (
     <Bg mood={mood}>
       
       <Container>
       <Header>
       <h1>TODO</h1>
-      <img src={moon} alt="" onClick={() => setMood(!mood)} />
+      <img src={mood?moon:sun} alt="" onClick={() => setMood(!mood)} />
       </Header>
         <Input type="text" mood={mood} onKeyPress={onKeyUp} placeholder='Create your habit' />
         <UL mood={mood}>
           {listArr}
           <li>
-            <span>{listText.length} item left</span>
-            <span>All</span>
-            <span>Active</span>
-            <span>Completed</span>
-            <span>Clear Completed</span>
+            <span>{listText.filter(item => !item.complete).length} item left</span>
+            <span onClick={activItemHandler.bind(this, 3)} >All</span>
+            <span onClick={activItemHandler.bind(this, 1)}>Active</span>
+            <span onClick={activItemHandler.bind(this, 2)}>Completed</span>
+            <span onClick={deleteCompleted}>Clear Completed</span>
           </li>
         </UL>
       </Container>
